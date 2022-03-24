@@ -1,16 +1,18 @@
 import sys
 import numpy as np
+import CifFile
+import math
 
 class CP2KCIF():
 	def __init__(self, file):
 		self.file = file
+		
 
-	def get_coords(slef):
+	def get_coords(self):
 		parsing = False
 		data =[]
-		elements = [] 
-		
-		for line in self.file:
+		f = open(self.file, 'r')
+		for line in f:
 			line = line.strip()
 			if line.startswith('&COORD'):
 				parsing = True
@@ -22,21 +24,23 @@ class CP2KCIF():
 
 			if parsing and not line.startswith('&COORD'):
 				data.append(line)
-		coord = np.zeros((len(data), 4))
+		coord = []
 		for i, j in enumerate(data):
 			j = j.split()
-			elements.append(j[0])
-			coord[i][0] = j[1] 
-			coord[i][1] = j[2]
-			coord[i][2] = j[3]
+			element = j[0]
+			x = float(j[1]) 
+			y = float(j[2])
+			z = float(j[3])
+			coord.append([element, x, y, z])
 
-		return coord, elements
+		return coord
 
 	def get_uc(self):
+		cell={'a':0,'b':0,'c':0,'alpha':0,'beta':0,'gamma':0}
 		parsing = False
 		data = []
-
-		for line in self.file:
+		f = open(self.file, 'r')
+		for line in f:
 			line = line.strip()
 			if line.startswith('&CELL'):
 				parsing = True
@@ -53,12 +57,35 @@ class CP2KCIF():
 			matrix[i][0] = j[1]
 			matrix[i][1] = j[2]
 			matrix[i][2] = j[3]
-		return matrix
-	def det3(mat):
+
+		'''
+		a = |a| = √( d11² + d12² + d13²)
+		b = |b| = √( d21² + d22² + d23²)
+		c = |c| = √( d31² + d32² + d33²)
+		'''
+		a = cell['a'] = math.sqrt(sum(matrix[0]**2))
+		b = cell['b'] = math.sqrt(sum(matrix[1]**2))
+		c = cell['c'] = math.sqrt(sum(matrix[2]**2))
+		'''
+		alpha = acos(  b·c/b*c )
+		beta  = acos(  c·a/c*a )
+		gamma = acos(  a·b/a*b )
+
+		radians to degrees (x*180)/pi
+		'''
+
+
+		cell['alpha'] = ((math.acos(np.dot(matrix[1], matrix[2])/b*c))*180)/math.pi
+		cell['beta'] = ((math.acos(np.dot(matrix[2], matrix[0])/c*a))*180)/math.pi
+		cell['gamma'] = ((math.acos(np.dot(matrix[0], matrix[1])/a*b))*180)/math.pi
+
+		return matrix, cell
+
+	def det3(self, mat):
 		return ((mat[0][0]*mat[1][1]*mat[2][2]) + (mat[0][1]*mat[1][2]*mat[2][0]) + (mat[0][2]*mat[1][0]*mat[2][1]) - (mat[0][2]*mat[1][1]*mat[2][0]) - (mat[0][1]*mat[1][0]*mat[2][2]) - (mat[0][0]*mat[1][2]*mat[2][1]))
 
 
-	def frac2cart(cellParam, fracCoords):
+	def frac2cart(self, cellParam, fracCoords):
 		'''
 		 a function that takes the cell parameters, in angstrom, and a list of fractional coordinates
 		 and returns the structure in Cartesian coordinates
@@ -69,16 +96,16 @@ class CP2KCIF():
 		 | cx  cy  cz |
 		
 		'''
-	  cartCoords = []
-	  for i in fracCoords:
-	    xPos = i[1]*cellParam[0][0] + i[2]*cellParam[1][0] + i[3]*cellParam[2][0]
-	    yPos = i[1]*cellParam[0][1] + i[2]*cellParam[1][1] + i[3]*cellParam[2][1]
-	    zPos = i[1]*cellParam[0][2] + i[2]*cellParam[1][2] + i[3]*cellParam[2][2]
-	    cartCoords.append([i[0], xPos, yPos, zPos])
-	  return cartCoords
+		cartCoords = []
+		for i in fracCoords:
+		  xPos = i[1]*cellParam[0][0] + i[2]*cellParam[1][0] + i[3]*cellParam[2][0]
+		  yPos = i[1]*cellParam[0][1] + i[2]*cellParam[1][1] + i[3]*cellParam[2][1]
+		  zPos = i[1]*cellParam[0][2] + i[2]*cellParam[1][2] + i[3]*cellParam[2][2]
+		  cartCoords.append([i[0], xPos, yPos, zPos])
+		return cartCoords
 
 
-	def cart2frac(cellParam, cartCoords):
+	def cart2frac(self, cellParam, cartCoords):
 		#####################################
 		# a function that takes the cell parameters, in angstrom, and a list of Cartesian coordinates
 		# and returns the structure in fractional coordinates
@@ -98,29 +125,33 @@ class CP2KCIF():
 		# | X  x2  y2  z2 |
 		# | ............. |
 		# where X is the element symbol
-		
-	  latCnt = [x[:] for x in [[None]*3]*3]
-	  for a in range(3):
-	    for b in range(3):
-		  latCnt[a][b] = cellParam[b][a]
 
-	  fracCoords = []
-	  detLatCnt = det3(latCnt)
-	  for i in cartCoords:
-	    aPos = (det3([[i[1], latCnt[0][1], latCnt[0][2]], [i[2], latCnt[1][1], latCnt[1][2]], [i[3], latCnt[2][1], latCnt[2][2]]])) / detLatCnt
-	    bPos = (det3([[latCnt[0][0], i[1], latCnt[0][2]], [latCnt[1][0], i[2], latCnt[1][2]], [latCnt[2][0], i[3], latCnt[2][2]]])) / detLatCnt
-	    cPos = (det3([[latCnt[0][0], latCnt[0][1], i[1]], [latCnt[1][0], latCnt[1][1], i[2]], [latCnt[2][0], latCnt[2][1], i[3]]])) / detLatCnt
-	    fracCoords.append([i[0], aPos, bPos, cPos])
-	  return fracCoords
+		latCnt = [x[:] for x in [[None]*3]*3]
+		for a in range(3):
+		  for b in range(3):
+		  	latCnt[a][b] = cellParam[b][a]
+  
+		fracCoords = []
+		detLatCnt = self.det3(latCnt)
+		for i in cartCoords:
+		  aPos = (self.det3([[i[1], latCnt[0][1], latCnt[0][2]], [i[2], latCnt[1][1], latCnt[1][2]], [i[3], latCnt[2][1], latCnt[2][2]]])) / detLatCnt
+		  bPos = (self.det3([[latCnt[0][0], i[1], latCnt[0][2]], [latCnt[1][0], i[2], latCnt[1][2]], [latCnt[2][0], i[3], latCnt[2][2]]])) / detLatCnt
+		  cPos = (self.det3([[latCnt[0][0], latCnt[0][1], i[1]], [latCnt[1][0], latCnt[1][1], i[2]], [latCnt[2][0], latCnt[2][1], i[3]]])) / detLatCnt
+		  fracCoords.append([i[0], aPos, bPos, cPos])
+		return fracCoords
 
 	def gen_cif(self):
 		pass
-		
+			
 
 if __name__ == '__main__':
 	inpt = sys.argv[1]
 
-	f = open(inpt, 'r')
-	
-	cp2cif = CP2KCIF(f)
-	cp2cif.get_uc()
+	cp2cif = CP2KCIF(inpt)
+	uc = cp2cif.get_uc()
+	coord = cp2cif.get_coords()
+	#x = cp2cif.cart2frac(uc, coord) 
+	print (uc[1])
+
+
+
