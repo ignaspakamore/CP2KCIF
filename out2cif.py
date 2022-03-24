@@ -7,11 +7,13 @@ class CP2KCIF():
 		self.file = file
 		self.unit = ''
 		self.scaled = ''
-		self.method = 
+		self.method = ''
 		if self.scaled == 'T' or self.scaled == 'TRUE' or self.scaled == 'True':
-			self.method = frac2cart
+			self.method = 'frac2cart'
 		else:
-			self.method = cart2frac	
+			self.method = 'cart2frac'
+		self.coord = self.get_coords()
+		self.uc = self.get_uc()
 
 	def get_coords(self):
 		parsing = False
@@ -84,7 +86,6 @@ class CP2KCIF():
 		radians to degrees (x*180)/pi
 		'''
 
-
 		cell['alpha'] = ((math.acos(np.dot(matrix[1], matrix[2])/b*c))*180)/math.pi
 		cell['beta'] = ((math.acos(np.dot(matrix[2], matrix[0])/c*a))*180)/math.pi
 		cell['gamma'] = ((math.acos(np.dot(matrix[0], matrix[1])/a*b))*180)/math.pi
@@ -93,7 +94,6 @@ class CP2KCIF():
 
 	def det3(self, mat):
 		return ((mat[0][0]*mat[1][1]*mat[2][2]) + (mat[0][1]*mat[1][2]*mat[2][0]) + (mat[0][2]*mat[1][0]*mat[2][1]) - (mat[0][2]*mat[1][1]*mat[2][0]) - (mat[0][1]*mat[1][0]*mat[2][2]) - (mat[0][0]*mat[1][2]*mat[2][1]))
-
 
 	def frac2cart(self, cellParam, fracCoords):
 		'''
@@ -151,7 +151,12 @@ class CP2KCIF():
 
 		return fracCoords
 
-	def gen_cif(self, coord, uc):
+	def gen_cif(self):
+		if self.method == 'cart2frac':
+			coord = self.cart2frac(self.uc[0], self.coord)
+		else:
+			pass
+
 		cif_head   = f"""\
 data_CP2K
 _symmetry_space_group_name_H-M    'P1'
@@ -160,12 +165,12 @@ _symmetry_cell_setting            triclinic
 loop_
 _symmetry_equiv_pos_as_xyz
   x,y,z
-_cell_length_a                      {uc['a']}
-_cell_length_b                      {uc['b']}
-_cell_length_c                      {uc['c']}
-_cell_angle_alpha                   {uc['alpha']}
-_cell_angle_beta                    {uc['beta']}
-_cell_angle_gamma                   {uc['gamma']}
+_cell_length_a                      {self.uc[1]['a']}
+_cell_length_b                      {self.uc[1]['b']}
+_cell_length_c                      {self.uc[1]['c']}
+_cell_angle_alpha                   {self.uc[1]['alpha']}
+_cell_angle_beta                    {self.uc[1]['beta']}
+_cell_angle_gamma                   {self.uc[1]['gamma']}
 loop_
 _atom_site_type_symbol
 _atom_site_type_symbol
@@ -173,7 +178,7 @@ _atom_site_fract_x
 _atom_site_fract_y
 _atom_site_fract_z\n"""
 
-		f = open('out.cif', 'w')
+		f = open('cp2k.cif', 'w')
 
 		f.write(cif_head)
 		for i in range(len(coord)):
@@ -185,17 +190,26 @@ _atom_site_fract_z\n"""
 			f.write(cif_atoms)
 		f.close()
 
-	def gen_xyz(self):
-		pass
+	def gen_xyz(self, coord):
+		if self.method == 'frac2cart':
+			self.frac2cart(self.uc[0], self.coord)
+		else:
+			pass
+			'''
+		 n_atoms = f"""{len(coord)}"""
+		 xyz = f"""{x} {y} {z}"""
+			'''
 
 if __name__ == '__main__':
-	inpt = sys.argv[1]
-
+	fle_type = sys.argv[1]
+	inpt = sys.argv[2]
 	cp2cif = CP2KCIF(inpt)
-	uc = cp2cif.get_uc()
-	coord = cp2cif.get_coords()
-	frac = cp2cif.cart2frac(uc[0], coord) 
-	cp2cif.gen_cif(frac, uc[1])
+	if fle_type == '-cif':
+		cp2cif.gen_cif()
+	elif fle_type == '-xyz':
+		cp2cif.gen_xyz()
+	else:
+		print('options: -xyz <file> or -cif <file>')
 	
 
 
