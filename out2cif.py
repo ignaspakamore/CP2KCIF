@@ -1,12 +1,17 @@
 import sys
 import numpy as np
-import CifFile
 import math
 
 class CP2KCIF():
 	def __init__(self, file):
 		self.file = file
-		
+		self.unit = ''
+		self.scaled = ''
+		self.method = 
+		if self.scaled == 'T' or self.scaled == 'TRUE' or self.scaled == 'True':
+			self.method = frac2cart
+		else:
+			self.method = cart2frac	
 
 	def get_coords(self):
 		parsing = False
@@ -18,8 +23,13 @@ class CP2KCIF():
 				parsing = True
 			if line.startswith('&END COORD'):
 				parsing = False
+			if line.startswith('SCALED'):
+				line.strip()
+				self.scaled = line.split()[1]
 
 			if line.startswith('UNIT'):
+				line = line.strip()
+				self.unit = line.split()[1]
 				parsing = False
 
 			if parsing and not line.startswith('&COORD'):
@@ -138,11 +148,45 @@ class CP2KCIF():
 		  bPos = (self.det3([[latCnt[0][0], i[1], latCnt[0][2]], [latCnt[1][0], i[2], latCnt[1][2]], [latCnt[2][0], i[3], latCnt[2][2]]])) / detLatCnt
 		  cPos = (self.det3([[latCnt[0][0], latCnt[0][1], i[1]], [latCnt[1][0], latCnt[1][1], i[2]], [latCnt[2][0], latCnt[2][1], i[3]]])) / detLatCnt
 		  fracCoords.append([i[0], aPos, bPos, cPos])
+
 		return fracCoords
 
-	def gen_cif(self):
+	def gen_cif(self, coord, uc):
+		cif_head   = f"""\
+data_CP2K
+_symmetry_space_group_name_H-M    'P1'
+_symmetry_Int_Tables_number       1
+_symmetry_cell_setting            triclinic
+loop_
+_symmetry_equiv_pos_as_xyz
+  x,y,z
+_cell_length_a                      {uc['a']}
+_cell_length_b                      {uc['b']}
+_cell_length_c                      {uc['c']}
+_cell_angle_alpha                   {uc['alpha']}
+_cell_angle_beta                    {uc['beta']}
+_cell_angle_gamma                   {uc['gamma']}
+loop_
+_atom_site_type_symbol
+_atom_site_type_symbol
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z\n"""
+
+		f = open('out.cif', 'w')
+
+		f.write(cif_head)
+		for i in range(len(coord)):
+			el = coord[i][0]
+			x = coord[i][1]
+			y = coord[i][2]
+			z = coord[i][3]
+			cif_atoms = f"""{el}{' '*2}{el}{' '*2}{x}{' '*2}{y}{' '*2}{z}\n"""
+			f.write(cif_atoms)
+		f.close()
+
+	def gen_xyz(self):
 		pass
-			
 
 if __name__ == '__main__':
 	inpt = sys.argv[1]
@@ -150,8 +194,9 @@ if __name__ == '__main__':
 	cp2cif = CP2KCIF(inpt)
 	uc = cp2cif.get_uc()
 	coord = cp2cif.get_coords()
-	#x = cp2cif.cart2frac(uc, coord) 
-	print (uc[1])
+	frac = cp2cif.cart2frac(uc[0], coord) 
+	cp2cif.gen_cif(frac, uc[1])
+	
 
 
 
