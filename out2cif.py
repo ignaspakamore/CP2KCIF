@@ -71,17 +71,17 @@ class CP2KCIF():
 			matrix[i][2] = j[3]
 
 		'''
-		a = |a| = √( d11² + d12² + d13²)
-		b = |b| = √( d21² + d22² + d23²)
-		c = |c| = √( d31² + d32² + d33²)
+		a= |a| =  sgr(d11^2 + d12^2 + d13^2)
+		b = |b| = sqr( d21^2 + d22^2 + d23^2)
+		c = |c| = sqr( d31^2 + d32^2 + d33^2)
 		'''
 		a = cell['a'] = math.sqrt(sum(matrix[0]**2))
 		b = cell['b'] = math.sqrt(sum(matrix[1]**2))
 		c = cell['c'] = math.sqrt(sum(matrix[2]**2))
 		'''
-		alpha = acos(  b·c/b*c )
-		beta  = acos(  c·a/c*a )
-		gamma = acos(  a·b/a*b )
+		alpha = acos(  b.c/b*c )
+		beta  = acos(  c.a/c*a )
+		gamma = acos(  a.b/a*b )
 
 		radians to degrees (x*180)/pi
 		'''
