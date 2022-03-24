@@ -172,7 +172,7 @@ _cell_angle_alpha                   {self.uc[1]['alpha']}
 _cell_angle_beta                    {self.uc[1]['beta']}
 _cell_angle_gamma                   {self.uc[1]['gamma']}
 loop_
-_atom_site_type_symbol
+_atom_site_label
 _atom_site_type_symbol
 _atom_site_fract_x
 _atom_site_fract_y
@@ -181,12 +181,14 @@ _atom_site_fract_z\n"""
 		f = open('cp2k.cif', 'w')
 
 		f.write(cif_head)
+		kind = {}
 		for i in range(len(coord)):
 			el = coord[i][0]
+			kind[el]=i+1
 			x = coord[i][1]
 			y = coord[i][2]
 			z = coord[i][3]
-			cif_atoms = f"""{el}{' '*2}{el}{' '*2}{x}{' '*2}{y}{' '*2}{z}\n"""
+			cif_atoms = f"""{el}{kind[el]}{' '*2}{el}{' '*2}{x}{' '*2}{y}{' '*2}{z}\n"""
 			f.write(cif_atoms)
 		f.close()
 
