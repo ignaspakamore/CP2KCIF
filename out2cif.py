@@ -183,12 +183,15 @@ _atom_site_fract_z\n"""
 		f.write(cif_head)
 		kind = {}
 		for i in range(len(coord)):
+		 kind[coord[i][0]] = 0
+		 
+		for i in range(len(coord)):
 			el = coord[i][0]
-			kind[el]=i+1
+			kind[el] = kind[el]+1
 			x = coord[i][1]
 			y = coord[i][2]
 			z = coord[i][3]
-			cif_atoms = f"""{el}{kind[el]}{' '*2}{el}{' '*2}{x}{' '*2}{y}{' '*2}{z}\n"""
+			cif_atoms = f"""{el+str(kind[el])}{' '*2}{el}{' '*2}{x}{' '*2}{y}{' '*2}{z}\n"""
 			f.write(cif_atoms)
 		f.close()
 
