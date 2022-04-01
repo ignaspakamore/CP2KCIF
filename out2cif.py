@@ -54,7 +54,7 @@ class CP2KCIF():
 		f = open(self.file, 'r')
 		for line in f:
 			line = line.strip()
-			if line.startswith('&CELL'):
+			if line.startswith('&CELL') and not line.startswith('&CELL_'):
 				parsing = True
 			if line.startswith('&END CELL'):
 				parsing = False
@@ -66,18 +66,19 @@ class CP2KCIF():
 		matrix = np.zeros((len(data), 3))
 		for i, j in enumerate(data):
 			j = j.split()
-			matrix[i][0] = j[1]
-			matrix[i][1] = j[2]
-			matrix[i][2] = j[3]
+			matrix[i][0] = float(j[1])
+			matrix[i][1] = float(j[2])
+			matrix[i][2] = float(j[3])
 
 		'''
-		a= |a| =  sgr(d11^2 + d12^2 + d13^2)
+		a= |a| =  sqr(d11^2 + d12^2 + d13^2)
 		b = |b| = sqr( d21^2 + d22^2 + d23^2)
 		c = |c| = sqr( d31^2 + d32^2 + d33^2)
 		'''
 		a = cell['a'] = math.sqrt(sum(matrix[0]**2))
 		b = cell['b'] = math.sqrt(sum(matrix[1]**2))
 		c = cell['c'] = math.sqrt(sum(matrix[2]**2))
+
 		'''
 		alpha = acos(  b.c/b*c )
 		beta  = acos(  c.a/c*a )
@@ -86,10 +87,10 @@ class CP2KCIF():
 		radians to degrees (x*180)/pi
 		'''
 
-		cell['alpha'] = ((math.acos(np.dot(matrix[1], matrix[2])/b*c))*180)/math.pi
-		cell['beta'] = ((math.acos(np.dot(matrix[2], matrix[0])/c*a))*180)/math.pi
-		cell['gamma'] = ((math.acos(np.dot(matrix[0], matrix[1])/a*b))*180)/math.pi
-
+		cell['alpha'] = (math.acos(np.dot(matrix[1], matrix[2])/(b*c))*180)/math.pi
+		cell['beta'] = (math.acos(np.dot(matrix[2], matrix[0])/(c*a))*180)/math.pi
+		cell['gamma'] = (math.acos(np.dot(matrix[0], matrix[1])/(a*b))*180)/math.pi
+		
 		return matrix, cell
 
 	def det3(self, mat):
