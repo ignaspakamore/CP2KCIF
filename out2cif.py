@@ -153,10 +153,10 @@ class CP2KCIF():
 		return fracCoords
 
 	def gen_cif(self):
-		if self.method == 'cart2frac':
+		if self.scaled == 'F' or self.scaled == 'FALSE' or self.scaled == 'False':
 			coord = self.cart2frac(self.uc[0], self.coord)
-		else:
-			pass
+		elif self.scaled == 'T' or self.scaled == 'TRUE' or self.scaled == 'True':
+			coord = self.coord
 
 		cif_head   = f"""\
 data_CP2K
@@ -172,6 +172,7 @@ _cell_length_c                      {self.uc[1]['c']}
 _cell_angle_alpha                   {self.uc[1]['alpha']}
 _cell_angle_beta                    {self.uc[1]['beta']}
 _cell_angle_gamma                   {self.uc[1]['gamma']}
+_cell_volume                        {self.uc[1]['a']*self.uc[1]['b']*self.uc[1]['c']}
 loop_
 _atom_site_label
 _atom_site_type_symbol
@@ -196,15 +197,14 @@ _atom_site_fract_z\n"""
 			f.write(cif_atoms)
 		f.close()
 
+		print(f'SCALED:{self.scaled}\nMETHOD:{self.method}\nUNITS:{self.unit}')
+
 	def gen_xyz(self, coord):
-		if self.method == 'frac2cart':
-			self.frac2cart(self.uc[0], self.coord)
-		else:
+		if self.scaled == 'T' or self.scaled == 'TRUE' or self.scaled == 'True':
 			pass
-			'''
-		 n_atoms = f"""{len(coord)}"""
-		 xyz = f"""{x} {y} {z}"""
-			'''
+		else:
+			self.frac2cart(self.uc[0], self.coord)
+	
 
 if __name__ == '__main__':
 	fle_type = sys.argv[1]
@@ -216,6 +216,7 @@ if __name__ == '__main__':
 		cp2cif.gen_xyz()
 	else:
 		print('options: -xyz <file> or -cif <file>')
+
 	
 
 
