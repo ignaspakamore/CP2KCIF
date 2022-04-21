@@ -197,14 +197,31 @@ _atom_site_fract_z\n"""
 			f.write(cif_atoms)
 		f.close()
 
-		print(f'SCALED:{self.scaled}\nMETHOD:{self.method}\nUNITS:{self.unit}')
+		print(f'SCALED:{self.scaled}\nMETHOD:{self.method}\nUNITS:{self.unit}\nFILE TYPE: cif')
 
-	def gen_xyz(self, coord):
+	def gen_xyz(self):
 		if self.scaled == 'T' or self.scaled == 'TRUE' or self.scaled == 'True':
-			pass
-		else:
-			self.frac2cart(self.uc[0], self.coord)
-	
+			coord = self.frac2cart(self.uc[0], self.coord)
+		elif self.scaled == 'F' or self.scaled == 'FALSE' or self.scaled == 'False':
+			coord = self.coord
+
+		f = open('cp2k.xyz', 'w')
+
+
+		xyz_head   = f"""\
+{len(coord)}
+"""
+		f.write(xyz_head)
+
+		for i in range(len(coord)):
+			el = coord[i][0]
+			x = coord[i][1]
+			y = coord[i][2]
+			z = coord[i][3]
+			xyz_atoms = f"""{el}{' '*2}{' '*2}{x}{' '*2}{y}{' '*2}{z}\n"""
+			f.write(xyz_atoms)
+		f.close()
+		print(f'SCALED:{self.scaled}\nMETHOD:{self.method}\nUNITS:{self.unit}\nFILE TYPE: xyz')
 
 if __name__ == '__main__':
 	fle_type = sys.argv[1]
